@@ -13,7 +13,7 @@ from .utils import run_threads
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="proxlive - Proxy Checker"
+        description="proxlive - Fast proxy checker"
     )
 
     parser.add_argument(
@@ -41,13 +41,6 @@ def parse_args():
         help="Output file (optional)"
     )
 
-    parser.add_argument(
-        "-f", "--format",
-        choices=["txt", "json", "auto"],
-        default="auto",
-        help="Output format (default: auto)"
-    )
-
     return parser.parse_args()
 
 
@@ -61,7 +54,12 @@ def run():
     THREADS = args.threads
     TIMEOUT = args.timeout
     OUTPUT_FILE = args.output
-    FORMAT = args.format
+
+    # ===================== LOAD =====================
+
+    if not os.path.exists(INPUT_FILE):
+        print("[!] Input file not found")
+        return
 
     data, file_type = load_proxies(INPUT_FILE)
 
@@ -72,14 +70,15 @@ def run():
     if file_type == "txt":
         proxies = data
         proxy_map = {p: p for p in proxies}
-    else:
+
+    else:  # json
         proxies = [entry["proxy"] for entry in data]
         proxy_map = {entry["proxy"]: entry for entry in data}
 
-    # Bind timeout into function
+    # Bind timeout into checker
     check = partial(check_proxy, timeout=TIMEOUT)
 
-    # =================================================
+    # ===================== RUN =====================
 
     results = run_threads(check, proxies, max_workers=THREADS)
 
@@ -95,24 +94,33 @@ def run():
 
     # ===================== OUTPUT =====================
 
-    os.makedirs("output", exist_ok=True)
     timestamp = int(time.time())
 
-    # Determine format
-    if FORMAT == "auto":
-        FORMAT = file_type
+    # Decide extension based on input
+    ext = "txt" if file_type == "txt" else "json"
 
     if OUTPUT_FILE:
-        output_path = OUTPUT_FILE
+        # Add extension if missing
+        if not OUTPUT_FILE.endswith(f".{ext}"):
+            output_path = f"{OUTPUT_FILE}.{ext}"
+        else:
+            output_path = OUTPUT_FILE
     else:
-        output_path = f"output/working_{timestamp}.{FORMAT}"
+        # Default filename (UPDATED)
+        output_path = f"proxies_{timestamp}.{ext}"
 
-    if FORMAT == "txt":
+    # Create directory only if user specified a path
+    output_dir = os.path.dirname(output_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+
+    # Write output
+    if file_type == "txt":
         with open(output_path, "w") as f:
             for proxy in working:
                 f.write(proxy + "\n")
 
-    elif FORMAT == "json":
+    else:  # json
         with open(output_path, "w") as f:
             json.dump(working, f, indent=2)
 

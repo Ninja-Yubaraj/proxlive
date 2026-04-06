@@ -6,3 +6,5 @@ output/
 dist/
 build/
 *.egg-info/
+output.*
+proxies_*
