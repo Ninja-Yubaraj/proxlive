@@ -1,69 +1,118 @@
 import os
 import json
 import time
+import argparse
+from functools import partial
 
 from loader import load_proxies
 from checker import check_proxy
 from utils import run_threads
 
 
-# ===================== CONFIG =====================
-INPUT_FILE = "proxies.json"  # or proxies.txt
-OUTPUT_DIR = "output"
+# ===================== CLI =====================
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="proxlive - Proxy Checker"
+    )
+
+    parser.add_argument(
+        "-i", "--input",
+        required=True,
+        help="Input file (.txt or .json)"
+    )
+
+    parser.add_argument(
+        "-t", "--threads",
+        type=int,
+        default=50,
+        help="Number of threads (default: 50)"
+    )
+
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=5,
+        help="Request timeout in seconds (default: 5)"
+    )
+
+    parser.add_argument(
+        "-o", "--output",
+        help="Output file (optional)"
+    )
+
+    parser.add_argument(
+        "-f", "--format",
+        choices=["txt", "json", "auto"],
+        default="auto",
+        help="Output format (default: auto)"
+    )
+
+    return parser.parse_args()
+
+
 # =================================================
 
 
 def main():
+    args = parse_args()
+
+    INPUT_FILE = args.input
+    THREADS = args.threads
+    TIMEOUT = args.timeout
+    OUTPUT_FILE = args.output
+    FORMAT = args.format
+
     data, file_type = load_proxies(INPUT_FILE)
 
     print(f"[+] Loaded {len(data)} proxies ({file_type})")
 
-    # ===================== PREPARE =====================
+    # ===================== PREP =====================
 
     if file_type == "txt":
         proxies = data
         proxy_map = {p: p for p in proxies}
-
-    else:  # json
+    else:
         proxies = [entry["proxy"] for entry in data]
         proxy_map = {entry["proxy"]: entry for entry in data}
 
+    # Bind timeout into function
+    check = partial(check_proxy, timeout=TIMEOUT)
+
     # =================================================
 
-    results = run_threads(check_proxy, proxies)
+    results = run_threads(check, proxies, max_workers=THREADS)
 
     working = []
 
     for proxy, (status, response) in results:
         if status:
-            print(f"[✔] Working: {proxy}")
-
             if file_type == "txt":
                 working.append(proxy)
-
-            else:  # json
-                # Preserve original structure
+            else:
                 entry = proxy_map[proxy]
                 working.append(entry)
 
-        else:
-            print(f"[✘] Dead: {proxy}")
-
     # ===================== OUTPUT =====================
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs("output", exist_ok=True)
     timestamp = int(time.time())
 
-    if file_type == "txt":
-        output_path = os.path.join(OUTPUT_DIR, f"working_{timestamp}.txt")
+    # Determine format
+    if FORMAT == "auto":
+        FORMAT = file_type
 
+    if OUTPUT_FILE:
+        output_path = OUTPUT_FILE
+    else:
+        output_path = f"output/working_{timestamp}.{FORMAT}"
+
+    if FORMAT == "txt":
         with open(output_path, "w") as f:
             for proxy in working:
                 f.write(proxy + "\n")
 
-    else:  # json
-        output_path = os.path.join(OUTPUT_DIR, f"working_{timestamp}.json")
-
+    elif FORMAT == "json":
         with open(output_path, "w") as f:
             json.dump(working, f, indent=2)
 

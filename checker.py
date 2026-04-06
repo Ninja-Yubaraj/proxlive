@@ -1,10 +1,9 @@
 import requests
 
 TEST_URL = "http://httpbin.org/ip"
-TIMEOUT = 5
 
 
-def check_proxy(proxy):
+def check_proxy(proxy, timeout=5):
     try:
         proxies = {
             "http": proxy,
@@ -14,11 +13,12 @@ def check_proxy(proxy):
         response = requests.get(
             TEST_URL,
             proxies=proxies,
-            timeout=TIMEOUT,
+            timeout=timeout,
         )
 
         if response.status_code == 200:
             return True, response.json()
+
     except Exception:
         pass
 
