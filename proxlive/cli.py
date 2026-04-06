@@ -13,7 +13,7 @@ from .utils import run_threads
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="proxlive - Fast proxy checker"
+        description="proxlive - Fast multi-threaded python3 proxy checker supporting HTTP, HTTPS, SOCKS4, SOCKS5."
     )
 
     parser.add_argument(

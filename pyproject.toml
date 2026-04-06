@@ -1,7 +1,7 @@
 [project]
 name = "proxlive"
 version = "0.1.0"
-description = "Fast proxy checker with multi-protocol support"
+description = "Fast multi-threaded python3 proxy checker supporting HTTP, HTTPS, SOCKS4, SOCKS5."
 authors = [
     { name="Yubaraj Sarkar" }
 ]
