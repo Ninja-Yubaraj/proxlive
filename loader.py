@@ -8,16 +8,13 @@ def load_txt(file_path):
             line = line.strip()
             if line:
                 proxies.append(line)
-    return proxies
+    return proxies, "txt"
 
 
 def load_json(file_path):
-    proxies = []
     with open(file_path, "r") as f:
         data = json.load(f)
-        for entry in data:
-            proxies.append(entry["proxy"])
-    return proxies
+    return data, "json"
 
 
 def load_proxies(file_path):

@@ -8,58 +8,69 @@ from utils import run_threads
 
 
 # ===================== CONFIG =====================
-INPUT_FILE = "proxies.txt"
-
+INPUT_FILE = "proxies.json"  # or proxies.txt
 OUTPUT_DIR = "output"
-TXT_OUTPUT = "working.txt"
-JSON_OUTPUT = "working.json"
 # =================================================
 
 
 def main():
-    proxies = load_proxies(INPUT_FILE)
+    data, file_type = load_proxies(INPUT_FILE)
 
-    print(f"[+] Loaded {len(proxies)} proxies")
+    print(f"[+] Loaded {len(data)} proxies ({file_type})")
+
+    # ===================== PREPARE =====================
+
+    if file_type == "txt":
+        proxies = data
+        proxy_map = {p: p for p in proxies}
+
+    else:  # json
+        proxies = [entry["proxy"] for entry in data]
+        proxy_map = {entry["proxy"]: entry for entry in data}
+
+    # =================================================
 
     results = run_threads(check_proxy, proxies)
 
     working = []
 
-    for proxy, (status, data) in results:
+    for proxy, (status, response) in results:
         if status:
             print(f"[✔] Working: {proxy}")
-            working.append({
-                "proxy": proxy,
-                "response": data
-            })
+
+            if file_type == "txt":
+                working.append(proxy)
+
+            else:  # json
+                # Preserve original structure
+                entry = proxy_map[proxy]
+                working.append(entry)
+
         else:
             print(f"[✘] Dead: {proxy}")
 
-    # ===================== OUTPUT HANDLING =====================
+    # ===================== OUTPUT =====================
 
-    # Ensure output directory exists
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    # Timestamped filenames
     timestamp = int(time.time())
 
-    txt_path = os.path.join(OUTPUT_DIR, f"working_{timestamp}.txt")
-    json_path = os.path.join(OUTPUT_DIR, f"working_{timestamp}.json")
+    if file_type == "txt":
+        output_path = os.path.join(OUTPUT_DIR, f"working_{timestamp}.txt")
 
-    # Save TXT
-    with open(txt_path, "w") as f:
-        for p in working:
-            f.write(p["proxy"] + "\n")
+        with open(output_path, "w") as f:
+            for proxy in working:
+                f.write(proxy + "\n")
 
-    # Save JSON
-    with open(json_path, "w") as f:
-        json.dump(working, f, indent=2)
+    else:  # json
+        output_path = os.path.join(OUTPUT_DIR, f"working_{timestamp}.json")
 
-    # ==========================================================
+        with open(output_path, "w") as f:
+            json.dump(working, f, indent=2)
+
+    # ==================================================
 
     print(f"\n[+] Working proxies: {len(working)}")
-    print(f"[+] Saved TXT  -> {txt_path}")
-    print(f"[+] Saved JSON -> {json_path}")
+    print(f"[+] Saved -> {output_path}")
 
 
 if __name__ == "__main__":
