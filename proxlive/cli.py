@@ -54,7 +54,7 @@ def parse_args():
 # =================================================
 
 
-def main():
+def run():
     args = parse_args()
 
     INPUT_FILE = args.input
@@ -123,4 +123,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run()

@@ -1,4 +1,8 @@
-__pycache__
+__pycache__/
 venv/
 proxies.*
 output/
+*.pyc
+dist/
+build/
+*.egg-info/

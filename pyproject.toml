@@ -1,0 +1,21 @@
+[project]
+name = "proxlive"
+version = "0.1.0"
+description = "Fast proxy checker with multi-protocol support"
+authors = [
+    { name="Yubaraj Sarkar" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+
+dependencies = [
+    "requests",
+    "pysocks"
+]
+
+[project.scripts]
+proxlive = "proxlive.cli:run"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
