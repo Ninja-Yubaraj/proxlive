@@ -4,9 +4,9 @@ import time
 import argparse
 from functools import partial
 
-from loader import load_proxies
-from checker import check_proxy
-from utils import run_threads
+from .loader import load_proxies
+from .checker import check_proxy
+from .utils import run_threads
 
 
 # ===================== CLI =====================
